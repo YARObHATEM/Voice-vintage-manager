@@ -78,10 +78,15 @@ configuration.
 ### Tests
 
 ```sh
+npx playwright install chromium   # once, to fetch the browser
 npm run build
 npm test         # drives the built app in Chromium at iPhone size
 SHOTS=1 npm test # also writes screenshots to tests/shots/
 ```
+
+Playwright is pinned to an exact version rather than a range, because the
+browser build it downloads is tied to that version — a floating range quietly
+installs a Playwright whose browser is not on disk.
 
 The suite is not unit tests. It walks the path a real first evening takes —
 capture a hook, tick a roadmap step, add a creator, file a bug, search,
