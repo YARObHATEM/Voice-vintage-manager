@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>بينغ بونغ</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="بينغ بونغ">
+<meta name="theme-color" content="#0e0f13">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --panel: #181a21;
+    --line: #2a2d38;
+    --text: #f4f4f6;
+    --muted: #8b8f9c;
+    --a: #ff7a2f;
+    --b: #2fd3c0;
+    --gold: #ffd166;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "SF Arabic", "Geeza Pro", system-ui, sans-serif;
+    overscroll-behavior: none; touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+  }
+  body {
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+  /* Two big tap zones, stacked in portrait and side by side in landscape. */
+  #court { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px; min-height: 0; }
+  @media (orientation: landscape) { #court { flex-direction: row; } }
+
+  .side {
+    flex: 1; min-height: 0; position: relative; border-radius: 24px;
+    background: var(--panel); border: 2px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 12px; overflow: hidden;
+    transition: transform .08s ease;
+  }
+  .side:active { transform: scale(.985); }
+  .side[data-p="0"] { --c: var(--a); }
+  .side[data-p="1"] { --c: var(--b); }
+  .side::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%);
+  }
+  .side.flash { animation: flash .25s ease; }
+  @keyframes flash { from { background: color-mix(in srgb, var(--c) 35%, var(--panel)); } }
+
+  .name {
+    font-size: 22px; font-weight: 700; color: var(--c);
+    padding: 4px 14px; border-radius: 999px; position: relative; z-index: 1;
+  }
+  .pts {
+    font-size: min(30vh, 34vw); line-height: .9; font-weight: 800;
+    font-variant-numeric: tabular-nums; letter-spacing: -2px; position: relative;
+  }
+  @media (orientation: landscape) { .pts { font-size: min(42vh, 22vw); } }
+
+  .serve {
+    position: absolute; top: 12px; inset-inline-start: 14px; z-index: 1;
+    font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg); visibility: hidden;
+  }
+  .serve.on { visibility: visible; color: var(--text); border-color: var(--c); }
+
+  .tally { display: flex; gap: 14px; align-items: center; font-size: 13px; color: var(--muted); position: relative; }
+  .tally .grp { display: flex; align-items: center; gap: 6px; }
+  .dots { display: flex; gap: 4px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); }
+  .dot.on { background: var(--c); border-color: var(--c); }
+  .star { font-size: 16px; color: var(--line); }
+  .star.on { color: var(--gold); }
+  .cup { color: var(--gold); font-weight: 700; font-size: 15px; }
+
+  /* Bottom controls */
+  #bar { display: flex; gap: 8px; padding: 0 8px 8px; }
+  #bar button {
+    flex: 1; height: 64px; border-radius: 18px; background: var(--panel);
+    border: 2px solid var(--line); font-size: 18px; font-weight: 600;
+  }
+  #bar button:active { background: var(--line); }
+  #undo { flex: 2 !important; }
+  #undo:disabled { opacity: .35; }
+
+  /* Overlays */
+  .overlay {
+    position: fixed; inset: 0; z-index: 10; display: none;
+    align-items: center; justify-content: center; padding: 24px;
+    background: rgba(8, 9, 12, .82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  .overlay.show { display: flex; }
+  .card {
+    width: 100%; max-width: 420px; background: var(--panel); border: 2px solid var(--line);
+    border-radius: 28px; padding: 28px 22px; text-align: center;
+  }
+  .card h2 { margin: 6px 0 4px; font-size: 30px; }
+  .card p { margin: 6px 0 18px; color: var(--muted); font-size: 17px; }
+  .card .big-emoji { font-size: 64px; }
+  .card button.primary, .sheet button {
+    width: 100%; height: 60px; border-radius: 16px; font-size: 19px; font-weight: 700;
+    background: var(--text); color: var(--bg); margin-top: 8px;
+  }
+  .sheet button { background: var(--bg); color: var(--text); border: 2px solid var(--line); }
+  .sheet button.danger { color: #ff6b6b; }
+  .win-big .card { border-color: var(--gold); }
+  .win-big h2 { color: var(--gold); }
+
+  .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 11; }
+  .confetti span { position: absolute; top: -40px; font-size: 28px; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
+</style>
+</head>
+<body>
+
+<main id="court"></main>
+
+<nav id="bar">
+  <button id="undo" aria-label="تراجع">↶ تراجع</button>
+  <button id="swap" aria-label="بدّل الجهات">⇄</button>
+  <button id="menu" aria-label="القائمة">⋯</button>
+</nav>
+
+<div class="overlay" id="win">
+  <div class="card">
+    <div class="big-emoji" id="winEmoji"></div>
+    <h2 id="winTitle"></h2>
+    <p id="winText"></p>
+    <button class="primary" id="winOk">كمّلوا 🏓</button>
+  </div>
+</div>
+
+<div class="overlay" id="sheet">
+  <div class="card sheet">
+    <h2>القائمة</h2>
+    <p id="rules">الدق ١١ نقطة · ٣ دقوق = خمسة صغيرة · ٣ خمسات صغيرة = الخمسة الكبيرة 🏆</p>
+    <button id="rename0"></button>
+    <button id="rename1"></button>
+    <button id="newBig">خمسة كبيرة جديدة (بتضل الكؤوس)</button>
+    <button id="resetAll" class="danger">صفّر كل شي</button>
+    <button id="closeSheet" style="background:var(--text);color:var(--bg);border:0">رجوع</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// A game is 11 points (win by 2). First to 3 games takes a "small five";
+// first to 3 small fives takes the "big five" — the prize.
+const GAME_POINTS = 11;
+const TO_WIN = 3;
+const KEY = 'pingpong.v1';
+const HISTORY_CAP = 400;
+
+const fresh = () => ({
+  names: ['لاعب ١', 'لاعب ٢'],
+  pts: [0, 0],
+  games: [0, 0],
+  smalls: [0, 0],
+  bigs: [0, 0],
+  firstServer: 0,
+  swapped: false,
+});
+
+let state, history;
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY));
+  state = saved?.state ?? fresh();
+  history = saved?.history ?? [];
+} catch { state = fresh(); history = []; }
+
+const save = () => {
+  try { localStorage.setItem(KEY, JSON.stringify({ state, history })); } catch {}
+};
+
+const snapshot = () => {
+  history.push(JSON.stringify(state));
+  if (history.length > HISTORY_CAP) history.shift();
+};
+
+// Service alternates every 2 points, and every point once it's 10–10.
+const server = () => {
+  const total = state.pts[0] + state.pts[1];
+  const step = total >= 2 * (GAME_POINTS - 1) ? total : Math.floor(total / 2);
+  return state.firstServer ^ (step % 2);
+};
+
+const gameWon = (p) =>
+  state.pts[p] >= GAME_POINTS && state.pts[p] - state.pts[1 - p] >= 2;
+
+function point(p) {
+  snapshot();
+  state.pts[p]++;
+  let result = null;
+
+  if (gameWon(p)) {
+    const final = [...state.pts];
+    state.pts = [0, 0];
+    state.games[p]++;
+    state.firstServer ^= 1;
+    result = { level: 'game', p, final };
+
+    if (state.games[p] >= TO_WIN) {
+      result = { level: 'small', p, games: [...state.games] };
+      state.games = [0, 0];
+      state.smalls[p]++;
+
+      if (state.smalls[p] >= TO_WIN) {
+        result = { level: 'big', p, smalls: [...state.smalls] };
+        state.smalls = [0, 0];
+        state.bigs[p]++;
+      }
+    }
+  }
+
+  save();
+  render();
+  flash(p);
+  if (result) celebrate(result);
+}
+
+function undo() {
+  if (!history.length) return;
+  state = JSON.parse(history.pop());
+  hide('win');
+  save();
+  render();
+}
+
+// ---------- rendering ----------
+const court = document.getElementById('court');
+const $ = (id) => document.getElementById(id);
+const num = (n) => String(n);
+
+const marks = (count, cls) =>
+  Array.from({ length: TO_WIN }, (_, i) =>
+    cls === 'dot'
+      ? `<span class="dot ${i < count ? 'on' : ''}"></span>`
+      : `<span class="star ${i < count ? 'on' : ''}">★</span>`
+  ).join('');
+
+function sideHTML(p) {
+  const serving = server() === p;
+  const atStart = state.pts[0] + state.pts[1] === 0;
+  return `
+    <div class="side" data-p="${p}">
+      <span class="serve ${serving ? 'on' : ''}" data-serve="${atStart ? 1 : 0}">🏓 إرسال${atStart ? ' ⇄' : ''}</span>
+      <span class="name" data-rename="${p}">${escapeHTML(state.names[p])}</span>
+      <span class="pts">${num(state.pts[p])}</span>
+      <div class="tally">
+        <span class="grp">دقوق <span class="dots">${marks(state.games[p], 'dot')}</span></span>
+        <span class="grp">صغيرة ${marks(state.smalls[p], 'star')}</span>
+        <span class="grp cup">🏆 ${num(state.bigs[p])}</span>
+      </div>
+    </div>`;
+}
+
+function render() {
+  const order = state.swapped ? [1, 0] : [0, 1];
+  court.innerHTML = order.map(sideHTML).join('');
+  $('undo').disabled = !history.length;
+  $('rename0').textContent = `✏️ غيّر اسم ${state.names[0]}`;
+  $('rename1').textContent = `✏️ غيّر اسم ${state.names[1]}`;
+}
+
+function flash(p) {
+  const el = court.querySelector(`.side[data-p="${p}"]`);
+  el?.classList.add('flash');
+}
+
+function celebrate({ level, p, final, games, smalls }) {
+  const name = state.names[p];
+  const score = (a) => `${num(a[0])} – ${num(a[1])}`;
+  const copy = {
+    game:  () => ['🏓', `${name} ربح الدق`, score(final)],
+    small: () => ['🔥', `${name} ربح خمسة صغيرة!`, `الدقوق ${score(games)}`],
+    big:   () => ['🏆', `${name} ربح الخمسة الكبيرة!`, `الخمسات الصغيرة ${score(smalls)} · الكؤوس: ${num(state.bigs[p])} 🏆`],
+  }[level]();
+  [$('winEmoji').textContent, $('winTitle').textContent, $('winText').textContent] = copy;
+  $('win').classList.toggle('win-big', level === 'big');
+  show('win');
+  if (level !== 'game') confetti(level === 'big' ? 70 : 30);
+}
+
+function confetti(n) {
+  const box = document.createElement('div');
+  box.className = 'confetti';
+  const bits = ['🎉', '🏓', '⭐', '🏆', '✨'];
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.textContent = bits[i % bits.length];
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.animationDuration = 1.6 + Math.random() * 1.6 + 's';
+    s.style.animationDelay = Math.random() * .6 + 's';
+    box.appendChild(s);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 4000);
+}
+
+const show = (id) => $(id).classList.add('show');
+const hide = (id) => $(id).classList.remove('show');
+
+function escapeHTML(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function rename(p) {
+  const v = prompt('شو الاسم؟', state.names[p]);
+  if (v && v.trim()) { state.names[p] = v.trim().slice(0, 16); save(); render(); }
+}
+
+// ---------- events ----------
+court.addEventListener('click', (e) => {
+  const serveEl = e.target.closest('[data-serve="1"]');
+  if (serveEl) {
+    // Before the first point of a game, tapping the serve badge picks who serves.
+    state.firstServer ^= 1; save(); render(); return;
+  }
+  if (e.target.closest('[data-rename]')) { rename(+e.target.closest('[data-rename]').dataset.rename); return; }
+  const side = e.target.closest('.side');
+  if (side) point(+side.dataset.p);
+});
+
+$('undo').onclick = undo;
+$('swap').onclick = () => { state.swapped = !state.swapped; save(); render(); };
+$('menu').onclick = () => show('sheet');
+$('closeSheet').onclick = () => hide('sheet');
+$('winOk').onclick = () => hide('win');
+$('rename0').onclick = () => rename(0);
+$('rename1').onclick = () => rename(1);
+$('newBig').onclick = () => {
+  if (!confirm('نبلّش خمسة كبيرة جديدة؟ النقاط والدقوق والخمسات الصغيرة بيتصفّروا، والكؤوس بتضل.')) return;
+  snapshot();
+  Object.assign(state, { pts: [0, 0], games: [0, 0], smalls: [0, 0] });
+  save(); render(); hide('sheet');
+};
+$('resetAll').onclick = () => {
+  if (!confirm('أكيد؟ رح ينمسح كل شي حتى الكؤوس والأسامي.')) return;
+  state = fresh(); history = [];
+  save(); render(); hide('sheet');
+};
+
+// Keep the screen awake during a match where the browser allows it.
+async function stayAwake() {
+  try { await navigator.wakeLock?.request('screen'); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) stayAwake(); });
+stayAwake();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+render();
+</script>
+</body>
+</html>
