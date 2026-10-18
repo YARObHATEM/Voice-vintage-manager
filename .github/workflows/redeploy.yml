@@ -1,0 +1,18 @@
+# The site is published by main's deploy workflow, which copies this branch
+# into /ping-pong/. Re-run it whenever this branch changes.
+name: Redeploy site
+
+on:
+  push:
+    branches: [ping-pong]
+
+permissions:
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run deploy.yml --ref main -R "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}
