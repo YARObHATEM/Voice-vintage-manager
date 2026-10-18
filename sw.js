@@ -1,6 +1,6 @@
 // Cache the app shell so it opens offline at the table. Bump VERSION on every
 // change so phones drop the old copy.
-const VERSION = 'pp-v1';
+const VERSION = 'pp-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

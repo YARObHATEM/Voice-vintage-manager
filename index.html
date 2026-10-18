@@ -22,6 +22,7 @@
     --a: #ff7a2f;
     --b: #2fd3c0;
     --gold: #ffd166;
+    --danger: #ff6b6b;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -36,85 +37,95 @@
   }
   button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
 
-  /* Two big tap zones, stacked in portrait and side by side in landscape. */
+  /* The two players of the current match, stacked in portrait, side by side in landscape. */
   #court { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 8px; min-height: 0; }
   @media (orientation: landscape) { #court { flex-direction: row; } }
 
   .side {
-    flex: 1; min-height: 0; position: relative; border-radius: 24px;
-    background: var(--panel); border: 2px solid var(--line);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 6px; padding: 12px; overflow: hidden;
-    transition: transform .08s ease;
+    flex: 1; min-height: 0; border-radius: 24px; background: var(--panel);
+    border: 2px solid var(--line); display: flex; flex-direction: column;
+    padding: 14px; gap: 12px; position: relative; overflow: hidden;
   }
-  .side:active { transform: scale(.985); }
-  .side[data-p="0"] { --c: var(--a); }
-  .side[data-p="1"] { --c: var(--b); }
-  .side::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%);
-  }
-  .side.flash { animation: flash .25s ease; }
-  @keyframes flash { from { background: color-mix(in srgb, var(--c) 35%, var(--panel)); } }
+  .side[data-slot="0"] { --c: var(--a); }
+  .side[data-slot="1"] { --c: var(--b); }
 
+  .who { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .name {
-    font-size: 22px; font-weight: 700; color: var(--c);
-    padding: 4px 14px; border-radius: 999px; position: relative; z-index: 1;
+    font-size: 24px; font-weight: 800; color: var(--c);
+    display: flex; align-items: center; gap: 6px; padding: 4px 2px; min-width: 0;
   }
-  .pts {
-    font-size: min(30vh, 34vw); line-height: .9; font-weight: 800;
-    font-variant-numeric: tabular-nums; letter-spacing: -2px; position: relative;
-  }
-  @media (orientation: landscape) { .pts { font-size: min(42vh, 22vw); } }
+  .name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name small { font-size: 14px; color: var(--muted); }
+  .cups { color: var(--gold); font-weight: 800; font-size: 20px; white-space: nowrap; }
 
-  .serve {
-    position: absolute; top: 12px; inset-inline-start: 14px; z-index: 1;
-    font-size: 13px; color: var(--muted); padding: 6px 10px; border-radius: 999px;
-    border: 1px solid var(--line); background: var(--bg); visibility: hidden;
-  }
-  .serve.on { visibility: visible; color: var(--text); border-color: var(--c); }
-
-  .tally { display: flex; gap: 14px; align-items: center; font-size: 13px; color: var(--muted); position: relative; }
-  .tally .grp { display: flex; align-items: center; gap: 6px; }
-  .dots { display: flex; gap: 4px; }
-  .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); }
+  .progress { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
+  .row .label { width: 64px; }
+  .dot { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line); }
   .dot.on { background: var(--c); border-color: var(--c); }
-  .star { font-size: 16px; color: var(--line); }
+  .star { font-size: 26px; line-height: 1; color: var(--line); }
   .star.on { color: var(--gold); }
-  .cup { color: var(--gold); font-weight: 700; font-size: 15px; }
 
-  /* Bottom controls */
+  .win {
+    flex: 1; min-height: 64px; border-radius: 18px; font-size: 26px; font-weight: 800;
+    background: var(--c); color: #111; display: flex; align-items: center; justify-content: center;
+    transition: transform .08s ease, filter .08s ease;
+  }
+  .win:active { transform: scale(.97); filter: brightness(.9); }
+
   #bar { display: flex; gap: 8px; padding: 0 8px 8px; }
   #bar button {
-    flex: 1; height: 64px; border-radius: 18px; background: var(--panel);
-    border: 2px solid var(--line); font-size: 18px; font-weight: 600;
+    flex: 1; height: 60px; border-radius: 18px; background: var(--panel);
+    border: 2px solid var(--line); font-size: 18px; font-weight: 700;
   }
   #bar button:active { background: var(--line); }
-  #undo { flex: 2 !important; }
   #undo:disabled { opacity: .35; }
 
-  /* Overlays */
+  /* Toast for a plain game win, so the next game can start straight away. */
+  #toast {
+    position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 16px); z-index: 20;
+    transform: translate(-50%, -150%); transition: transform .25s ease;
+    background: var(--text); color: var(--bg); font-weight: 800; font-size: 18px;
+    padding: 12px 20px; border-radius: 999px; white-space: nowrap;
+  }
+  #toast.show { transform: translate(-50%, 0); }
+
   .overlay {
     position: fixed; inset: 0; z-index: 10; display: none;
-    align-items: center; justify-content: center; padding: 24px;
+    align-items: center; justify-content: center; padding: 16px;
     background: rgba(8, 9, 12, .82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
   .overlay.show { display: flex; }
   .card {
-    width: 100%; max-width: 420px; background: var(--panel); border: 2px solid var(--line);
-    border-radius: 28px; padding: 28px 22px; text-align: center;
+    width: 100%; max-width: 440px; max-height: 100%; overflow-y: auto;
+    background: var(--panel); border: 2px solid var(--line);
+    border-radius: 28px; padding: 24px 18px; text-align: center;
   }
-  .card h2 { margin: 6px 0 4px; font-size: 30px; }
-  .card p { margin: 6px 0 18px; color: var(--muted); font-size: 17px; }
-  .card .big-emoji { font-size: 64px; }
-  .card button.primary, .sheet button {
-    width: 100%; height: 60px; border-radius: 16px; font-size: 19px; font-weight: 700;
-    background: var(--text); color: var(--bg); margin-top: 8px;
+  .card h2 { margin: 4px 0 8px; font-size: 26px; }
+  .card p { margin: 4px 0 16px; color: var(--muted); font-size: 16px; }
+  .big-emoji { font-size: 64px; }
+  .btn {
+    width: 100%; min-height: 56px; border-radius: 16px; font-size: 18px; font-weight: 700;
+    background: var(--bg); border: 2px solid var(--line); margin-top: 8px; padding: 8px 14px;
   }
-  .sheet button { background: var(--bg); color: var(--text); border: 2px solid var(--line); }
-  .sheet button.danger { color: #ff6b6b; }
-  .win-big .card { border-color: var(--gold); }
-  .win-big h2 { color: var(--gold); }
+  .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .btn.danger { color: var(--danger); }
+  .btn.picked { border-color: var(--gold); }
+  #celebrate.big .card { border-color: var(--gold); }
+  #celebrate.big h2 { color: var(--gold); }
+
+  .board { list-style: none; margin: 0 0 8px; padding: 0; text-align: start; }
+  .board li {
+    display: flex; align-items: center; gap: 10px; padding: 12px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .board .rank { width: 30px; text-align: center; font-size: 20px; font-weight: 800; color: var(--muted); }
+  .board .pname { flex: 1; font-size: 18px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board .stats { display: flex; gap: 10px; font-size: 15px; color: var(--muted); white-space: nowrap; }
+  .board .stats b { color: var(--text); }
+  .board .stats .c b { color: var(--gold); font-size: 18px; }
+  .board .edit { font-size: 18px; padding: 6px; }
+  .legend { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
 
   .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 11; }
   .confetti span { position: absolute; top: -40px; font-size: 28px; animation: fall linear forwards; }
@@ -126,170 +137,198 @@
 <main id="court"></main>
 
 <nav id="bar">
-  <button id="undo" aria-label="تراجع">↶ تراجع</button>
-  <button id="swap" aria-label="بدّل الجهات">⇄</button>
-  <button id="menu" aria-label="القائمة">⋯</button>
+  <button id="undo">↶ تراجع</button>
+  <button data-open="board">🏆 الترتيب</button>
+  <button data-open="menu">⋯</button>
 </nav>
 
-<div class="overlay" id="win">
+<div id="toast"></div>
+
+<div class="overlay" id="celebrate">
   <div class="card">
-    <div class="big-emoji" id="winEmoji"></div>
-    <h2 id="winTitle"></h2>
-    <p id="winText"></p>
-    <button class="primary" id="winOk">كمّلوا 🏓</button>
+    <div class="big-emoji" id="celEmoji"></div>
+    <h2 id="celTitle"></h2>
+    <p id="celText"></p>
+    <button class="btn primary" data-close>كمّلوا 🏓</button>
   </div>
 </div>
 
-<div class="overlay" id="sheet">
-  <div class="card sheet">
+<div class="overlay" id="board">
+  <div class="card">
+    <h2>🏆 الترتيب</h2>
+    <div class="legend">🏆 خمسات كبيرة · ⭐ خمسات صغيرة · 🏓 دقوق</div>
+    <ol class="board" id="boardList"></ol>
+    <button class="btn" data-action="add">➕ لاعب جديد</button>
+    <button class="btn primary" data-close>رجوع</button>
+  </div>
+</div>
+
+<div class="overlay" id="picker">
+  <div class="card">
+    <h2>مين بيلعب؟</h2>
+    <div id="pickList"></div>
+    <button class="btn" data-action="add-pick">➕ لاعب جديد</button>
+    <button class="btn primary" data-close>رجوع</button>
+  </div>
+</div>
+
+<div class="overlay" id="menu">
+  <div class="card">
     <h2>القائمة</h2>
-    <p id="rules">الدق ١١ نقطة · ٣ دقوق = خمسة صغيرة · ٣ خمسات صغيرة = الخمسة الكبيرة 🏆</p>
-    <button id="rename0"></button>
-    <button id="rename1"></button>
-    <button id="newBig">خمسة كبيرة جديدة (بتضل الكؤوس)</button>
-    <button id="resetAll" class="danger">صفّر كل شي</button>
-    <button id="closeSheet" style="background:var(--text);color:var(--bg);border:0">رجوع</button>
+    <p>٣ دقوق = خمسة صغيرة ⭐ · ٣ خمسات صغيرة = خمسة كبيرة 🏆</p>
+    <button class="btn" data-action="reset-match">صفّر الماتش الحالي (الكؤوس بتضل)</button>
+    <button class="btn danger" data-action="wipe">امسح كل شي</button>
+    <button class="btn primary" data-close>رجوع</button>
   </div>
 </div>
 
 <script>
 'use strict';
 
-// A game is 11 points (win by 2). First to 3 games takes a "small five";
-// first to 3 small fives takes the "big five" — the prize.
-const GAME_POINTS = 11;
+// No points: after each game you tap who won it. First to 3 games takes a
+// "small five"; first to 3 small fives takes the "big five" — the cup.
 const TO_WIN = 3;
-const KEY = 'pingpong.v1';
-const HISTORY_CAP = 400;
+const KEY = 'pingpong.v2';
+const OLD_KEY = 'pingpong.v1';
+const HISTORY_CAP = 300;
 
-const fresh = () => ({
-  names: ['لاعب ١', 'لاعب ٢'],
-  pts: [0, 0],
-  games: [0, 0],
-  smalls: [0, 0],
-  bigs: [0, 0],
-  firstServer: 0,
-  swapped: false,
-});
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const newPlayer = (name, bigs = 0) => ({ id: newId(), name, bigs, smalls: 0, games: 0 });
+
+function fresh() {
+  const a = newPlayer('لاعب ١'), b = newPlayer('لاعب ٢');
+  return { players: [a, b], slots: [a.id, b.id], matches: {} };
+}
+
+// The first version counted points; keep its names and cups.
+function fromV1(old) {
+  const s = fresh();
+  s.players.forEach((p, i) => { p.name = old.names?.[i] || p.name; p.bigs = old.bigs?.[i] || 0; });
+  return s;
+}
 
 let state, history;
 try {
   const saved = JSON.parse(localStorage.getItem(KEY));
-  state = saved?.state ?? fresh();
-  history = saved?.history ?? [];
+  if (saved) ({ state, history } = saved);
+  else {
+    const old = JSON.parse(localStorage.getItem(OLD_KEY));
+    state = old?.state ? fromV1(old.state) : fresh();
+    history = [];
+  }
 } catch { state = fresh(); history = []; }
 
 const save = () => {
   try { localStorage.setItem(KEY, JSON.stringify({ state, history })); } catch {}
 };
-
 const snapshot = () => {
   history.push(JSON.stringify(state));
   if (history.length > HISTORY_CAP) history.shift();
 };
 
-// Service alternates every 2 points, and every point once it's 10–10.
-const server = () => {
-  const total = state.pts[0] + state.pts[1];
-  const step = total >= 2 * (GAME_POINTS - 1) ? total : Math.floor(total / 2);
-  return state.firstServer ^ (step % 2);
-};
+const player = (id) => state.players.find((p) => p.id === id);
 
-const gameWon = (p) =>
-  state.pts[p] >= GAME_POINTS && state.pts[p] - state.pts[1 - p] >= 2;
+// Progress is kept per pair, so switching opponents and back resumes where you were.
+function match() {
+  const [a, b] = state.slots;
+  const key = [a, b].sort().join('|');
+  return (state.matches[key] ||= { games: { [a]: 0, [b]: 0 }, smalls: { [a]: 0, [b]: 0 } });
+}
 
-function point(p) {
+function winGame(slot) {
   snapshot();
-  state.pts[p]++;
-  let result = null;
+  const w = state.slots[slot], l = state.slots[1 - slot];
+  const m = match(), pw = player(w);
+  m.games[w]++; pw.games++;
+  let result = { level: 'game', score: [m.games[w], m.games[l]] };
 
-  if (gameWon(p)) {
-    const final = [...state.pts];
-    state.pts = [0, 0];
-    state.games[p]++;
-    state.firstServer ^= 1;
-    result = { level: 'game', p, final };
+  if (m.games[w] >= TO_WIN) {
+    result = { level: 'small', score: [m.games[w], m.games[l]] };
+    m.games = { [w]: 0, [l]: 0 };
+    m.smalls[w]++; pw.smalls++;
 
-    if (state.games[p] >= TO_WIN) {
-      result = { level: 'small', p, games: [...state.games] };
-      state.games = [0, 0];
-      state.smalls[p]++;
-
-      if (state.smalls[p] >= TO_WIN) {
-        result = { level: 'big', p, smalls: [...state.smalls] };
-        state.smalls = [0, 0];
-        state.bigs[p]++;
-      }
+    if (m.smalls[w] >= TO_WIN) {
+      result = { level: 'big', score: [m.smalls[w], m.smalls[l]] };
+      m.smalls = { [w]: 0, [l]: 0 };
+      pw.bigs++;
     }
   }
 
   save();
   render();
-  flash(p);
-  if (result) celebrate(result);
+  announce(pw, result);
 }
 
 function undo() {
   if (!history.length) return;
   state = JSON.parse(history.pop());
-  hide('win');
+  hide('celebrate');
   save();
   render();
+  toast('↶ رجعنا خطوة');
 }
 
 // ---------- rendering ----------
-const court = document.getElementById('court');
 const $ = (id) => document.getElementById(id);
-const num = (n) => String(n);
+const esc = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const marks = (n, on, off) => Array.from({ length: TO_WIN }, (_, i) => (i < n ? on : off)).join('');
 
-const marks = (count, cls) =>
-  Array.from({ length: TO_WIN }, (_, i) =>
-    cls === 'dot'
-      ? `<span class="dot ${i < count ? 'on' : ''}"></span>`
-      : `<span class="star ${i < count ? 'on' : ''}">★</span>`
-  ).join('');
-
-function sideHTML(p) {
-  const serving = server() === p;
-  const atStart = state.pts[0] + state.pts[1] === 0;
+function sideHTML(slot) {
+  const id = state.slots[slot], p = player(id), m = match();
   return `
-    <div class="side" data-p="${p}">
-      <span class="serve ${serving ? 'on' : ''}" data-serve="${atStart ? 1 : 0}">🏓 إرسال${atStart ? ' ⇄' : ''}</span>
-      <span class="name" data-rename="${p}">${escapeHTML(state.names[p])}</span>
-      <span class="pts">${num(state.pts[p])}</span>
-      <div class="tally">
-        <span class="grp">دقوق <span class="dots">${marks(state.games[p], 'dot')}</span></span>
-        <span class="grp">صغيرة ${marks(state.smalls[p], 'star')}</span>
-        <span class="grp cup">🏆 ${num(state.bigs[p])}</span>
+    <section class="side" data-slot="${slot}">
+      <div class="who">
+        <button class="name" data-action="pick" data-slot="${slot}"><span>${esc(p.name)}</span><small>▾</small></button>
+        <span class="cups">🏆 ${p.bigs}</span>
       </div>
-    </div>`;
+      <div class="progress">
+        <div class="row"><span class="label">دقوق</span>${marks(m.games[id], '<span class="dot on"></span>', '<span class="dot"></span>')}</div>
+        <div class="row"><span class="label">صغيرة</span>${marks(m.smalls[id], '<span class="star on">★</span>', '<span class="star">★</span>')}</div>
+      </div>
+      <button class="win" data-action="win" data-slot="${slot}">فاز بالدق ✓</button>
+    </section>`;
 }
+
+const ranked = () => [...state.players].sort((a, b) => b.bigs - a.bigs || b.smalls - a.smalls || b.games - a.games);
 
 function render() {
-  const order = state.swapped ? [1, 0] : [0, 1];
-  court.innerHTML = order.map(sideHTML).join('');
+  $('court').innerHTML = sideHTML(0) + sideHTML(1);
   $('undo').disabled = !history.length;
-  $('rename0').textContent = `✏️ غيّر اسم ${state.names[0]}`;
-  $('rename1').textContent = `✏️ غيّر اسم ${state.names[1]}`;
+
+  const medals = ['🥇', '🥈', '🥉'];
+  $('boardList').innerHTML = ranked().map((p, i) => `
+    <li>
+      <span class="rank">${medals[i] ?? i + 1}</span>
+      <span class="pname">${esc(p.name)}</span>
+      <span class="stats"><span class="c">🏆 <b>${p.bigs}</b></span><span>⭐ <b>${p.smalls}</b></span><span>🏓 <b>${p.games}</b></span></span>
+      <button class="edit" data-action="edit" data-id="${p.id}">✏️</button>
+    </li>`).join('');
+
+  $('pickList').innerHTML = ranked().map((p) => `
+    <button class="btn ${state.slots.includes(p.id) ? 'picked' : ''}" data-action="choose" data-id="${p.id}">${esc(p.name)} · 🏆 ${p.bigs}</button>`).join('');
 }
 
-function flash(p) {
-  const el = court.querySelector(`.side[data-p="${p}"]`);
-  el?.classList.add('flash');
+let toastTimer;
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-function celebrate({ level, p, final, games, smalls }) {
-  const name = state.names[p];
-  const score = (a) => `${num(a[0])} – ${num(a[1])}`;
-  const copy = {
-    game:  () => ['🏓', `${name} ربح الدق`, score(final)],
-    small: () => ['🔥', `${name} ربح خمسة صغيرة!`, `الدقوق ${score(games)}`],
-    big:   () => ['🏆', `${name} ربح الخمسة الكبيرة!`, `الخمسات الصغيرة ${score(smalls)} · الكؤوس: ${num(state.bigs[p])} 🏆`],
-  }[level]();
-  [$('winEmoji').textContent, $('winTitle').textContent, $('winText').textContent] = copy;
-  $('win').classList.toggle('win-big', level === 'big');
-  show('win');
-  if (level !== 'game') confetti(level === 'big' ? 70 : 30);
+function announce(p, { level, score }) {
+  const s = `${score[0]} – ${score[1]}`;
+  if (level === 'game') return toast(`✅ ${p.name} ربح الدق · ${s}`);
+  const [emoji, title, text] = level === 'small'
+    ? ['⭐', `${p.name} ربح خمسة صغيرة!`, `الدقوق ${s}`]
+    : ['🏆', `${p.name} ربح الخمسة الكبيرة!`, `الخمسات الصغيرة ${s} · الكؤوس: ${p.bigs}`];
+  $('celEmoji').textContent = emoji;
+  $('celTitle').textContent = title;
+  $('celText').textContent = text;
+  $('celebrate').classList.toggle('big', level === 'big');
+  show('celebrate');
+  confetti(level === 'big' ? 70 : 25);
 }
 
 function confetti(n) {
@@ -311,56 +350,79 @@ function confetti(n) {
 const show = (id) => $(id).classList.add('show');
 const hide = (id) => $(id).classList.remove('show');
 
-function escapeHTML(s) {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function askName(current = '') {
+  const v = prompt('شو الاسم؟', current);
+  return v && v.trim() ? v.trim().slice(0, 20) : null;
 }
 
-function rename(p) {
-  const v = prompt('شو الاسم؟', state.names[p]);
-  if (v && v.trim()) { state.names[p] = v.trim().slice(0, 16); save(); render(); }
+function addPlayer() {
+  const name = askName();
+  if (!name) return null;
+  snapshot();
+  const p = newPlayer(name);
+  state.players.push(p);
+  save(); render();
+  return p;
+}
+
+let pickingSlot = 0;
+function choose(id) {
+  snapshot();
+  const other = 1 - pickingSlot;
+  // Picking the opponent just swaps the two sides.
+  if (state.slots[other] === id) state.slots[other] = state.slots[pickingSlot];
+  state.slots[pickingSlot] = id;
+  save(); render(); hide('picker');
+}
+
+function editPlayer(id) {
+  const p = player(id);
+  const action = prompt(`${p.name}\nاكتب اسم جديد، أو اكتب "امسح" لتمسحه`, p.name);
+  if (!action || !action.trim() || action.trim() === p.name) return;
+  if (action.trim() === 'امسح') {
+    if (state.slots.includes(id)) return alert('هاد عم يلعب هلق. بدّله بالماتش أول وبعدين امسحه.');
+    if (!confirm(`أكيد بدك تمسح ${p.name} مع كؤوسه؟`)) return;
+    snapshot();
+    state.players = state.players.filter((x) => x.id !== id);
+    for (const k of Object.keys(state.matches)) if (k.split('|').includes(id)) delete state.matches[k];
+  } else {
+    snapshot();
+    p.name = action.trim().slice(0, 20);
+  }
+  save(); render();
 }
 
 // ---------- events ----------
-court.addEventListener('click', (e) => {
-  const serveEl = e.target.closest('[data-serve="1"]');
-  if (serveEl) {
-    // Before the first point of a game, tapping the serve badge picks who serves.
-    state.firstServer ^= 1; save(); render(); return;
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action], [data-open], [data-close]');
+  if (!el) return;
+  if (el.dataset.open) return show(el.dataset.open);
+  if (el.hasAttribute('data-close')) return hide(el.closest('.overlay').id);
+
+  switch (el.dataset.action) {
+    case 'win': return winGame(+el.dataset.slot);
+    case 'pick': pickingSlot = +el.dataset.slot; return show('picker');
+    case 'choose': return choose(el.dataset.id);
+    case 'add': return addPlayer();
+    case 'add-pick': { const p = addPlayer(); if (p) choose(p.id); return; }
+    case 'edit': return editPlayer(el.dataset.id);
+    case 'reset-match': {
+      if (!confirm('نصفّر الدقوق والخمسات الصغيرة بين هالاتنين؟ الكؤوس والترتيب بيضلوا.')) return;
+      snapshot();
+      const [a, b] = state.slots;
+      state.matches[[a, b].sort().join('|')] = { games: { [a]: 0, [b]: 0 }, smalls: { [a]: 0, [b]: 0 } };
+      save(); render(); return hide('menu');
+    }
+    case 'wipe': {
+      if (!confirm('أكيد؟ رح ينمسح كل شي: اللاعبين والكؤوس والترتيب.')) return;
+      state = fresh(); history = [];
+      save(); render(); return hide('menu');
+    }
   }
-  if (e.target.closest('[data-rename]')) { rename(+e.target.closest('[data-rename]').dataset.rename); return; }
-  const side = e.target.closest('.side');
-  if (side) point(+side.dataset.p);
 });
-
 $('undo').onclick = undo;
-$('swap').onclick = () => { state.swapped = !state.swapped; save(); render(); };
-$('menu').onclick = () => show('sheet');
-$('closeSheet').onclick = () => hide('sheet');
-$('winOk').onclick = () => hide('win');
-$('rename0').onclick = () => rename(0);
-$('rename1').onclick = () => rename(1);
-$('newBig').onclick = () => {
-  if (!confirm('نبلّش خمسة كبيرة جديدة؟ النقاط والدقوق والخمسات الصغيرة بيتصفّروا، والكؤوس بتضل.')) return;
-  snapshot();
-  Object.assign(state, { pts: [0, 0], games: [0, 0], smalls: [0, 0] });
-  save(); render(); hide('sheet');
-};
-$('resetAll').onclick = () => {
-  if (!confirm('أكيد؟ رح ينمسح كل شي حتى الكؤوس والأسامي.')) return;
-  state = fresh(); history = [];
-  save(); render(); hide('sheet');
-};
 
-// Keep the screen awake during a match where the browser allows it.
-async function stayAwake() {
-  try { await navigator.wakeLock?.request('screen'); } catch {}
-}
-document.addEventListener('visibilitychange', () => { if (!document.hidden) stayAwake(); });
-stayAwake();
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 render();
 </script>
