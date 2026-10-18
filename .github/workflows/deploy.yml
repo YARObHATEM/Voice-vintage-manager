@@ -29,6 +29,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # The ping-pong scorer lives on its own branch and is served at /ping-pong/.
+      - uses: actions/checkout@v4
+        with:
+          ref: ping-pong
+          path: dist/ping-pong
+      - run: rm -rf dist/ping-pong/.git dist/ping-pong/.github
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

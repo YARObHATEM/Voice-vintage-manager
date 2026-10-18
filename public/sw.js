@@ -34,6 +34,8 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   if (new URL(req.url).origin !== self.location.origin) return;
+  // The ping-pong scorer shares this origin but has its own worker and cache.
+  if (new URL(req.url).pathname.startsWith(new URL('./ping-pong/', self.registration.scope).pathname)) return;
 
   if (req.mode === 'navigate') {
     event.respondWith(
